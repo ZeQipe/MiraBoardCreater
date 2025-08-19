@@ -32,6 +32,30 @@ class MiroAPI:
                 print(f"⚠️  API ошибка {response.status_code} для {endpoint}")
                 try:
                     error_details = response.json()
+                    
+                    # Специальная обработка ошибки цвета стикера
+                    if (endpoint == "sticky_notes" and 
+                        error_details.get('code') == '2.0703' and
+                        'style.fillColor' in str(error_details)):
+                        
+                        # Извлекаем неправильный цвет из ошибки
+                        context = error_details.get('context', {})
+                        fields = context.get('fields', [])
+                        for field in fields:
+                            if field.get('field') == 'style.fillColor':
+                                message = field.get('message', '')
+                                # Ищем цвет в сообщении типа "Unexpected value [#E0E0E0]"
+                                import re
+                                color_match = re.search(r'\[([#\w]+)\]', message)
+                                if color_match:
+                                    wrong_color = color_match.group(1)
+                                    print(f"    ❌ Неправильный цвет стикера: {wrong_color}")
+                                    print(f"    💡 Для стикеров используйте только: gray, light_yellow, yellow, orange,")
+                                    print(f"       light_green, green, dark_green, cyan, light_pink, pink, violet,")
+                                    print(f"       red, light_blue, blue, dark_blue, black")
+                                    return None
+                    
+                    # Для остальных ошибок показываем детали
                     print(f"    Детали: {error_details}")
                 except:
                     print(f"    Ответ: {response.text[:200]}")
@@ -81,19 +105,32 @@ class MiroAPI:
     def create_sticky(self, text: str, x: float, y: float, 
                      color: str = "#FFFF99") -> Optional[str]:
         """Создает стикер"""
+        # Конвертируем HEX цвета в допустимые значения Miro
+        color_map = {
+            "#FFE4E4": "light_pink",
+            "#FFE4CC": "orange", 
+            "#E6F3FF": "light_blue",
+            "#E6FFE6": "light_green",
+            "#E0E0E0": "gray",
+            "#FFFF99": "light_yellow",
+            "#FFFF00": "yellow",
+            "#FFD700": "yellow"
+        }
+        
+        miro_color = color_map.get(color, "light_yellow")
+        
         data = {
             "data": {
                 "content": text,
                 "shape": "square"
             },
             "style": {
-                "fillColor": color,
-                "fontSize": "12",
+                "fillColor": miro_color,
                 "textAlign": "left",
                 "textAlignVertical": "top"
             },
             "position": {"x": x, "y": y},
-            "geometry": {"width": 200, "height": 200}
+            "geometry": {"width": 200}
         }
         return self.api_call("sticky_notes", data)
     
