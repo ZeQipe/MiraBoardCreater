@@ -6,7 +6,7 @@ Command Executor - выполнение распарсенных команд
 
 import time
 from typing import Dict, Any
-from miro_api import MiroAPI
+from .miro_api import MiroAPI
 
 class CommandExecutor:
     """Исполнитель команд"""
