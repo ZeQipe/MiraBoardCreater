@@ -112,18 +112,8 @@ def select_files(files: List[Path]) -> List[Path]:
     else:
         return files
 
-def main():
-    """Главная функция"""
-    print("\n" + "="*60)
-    print("   🚀 MIRO ENGINE - UNIVERSAL DIAGRAM BUILDER")
-    print("="*60)
-    
-    # Получаем учетные данные
-    token, board_id = get_credentials()
-    
-    # Создаем движок
-    engine = MiroEngine(token, board_id)
-    
+def process_instructions(engine: MiroEngine, board_id: str):
+    """Обработка инструкций"""
     # Находим файлы инструкций
     print("\n📂 Поиск файлов инструкций...")
     print("-"*60)
@@ -132,14 +122,13 @@ def main():
     if not files:
         print("⚠️  Не найдено файлов инструкций!")
         print("\nСоздайте файлы в папке 'instructions/'")
-        print("или файлы *_instructions.txt в текущей папке")
-        sys.exit(0)
+        return False
     
     # Выбираем файлы
     selected_files = select_files(files)
     if not selected_files:
         print("❌ Файлы не выбраны")
-        sys.exit(1)
+        return False
     
     # Подтверждение
     print(f"\n📌 Будет обработано файлов: {len(selected_files)}")
@@ -147,7 +136,7 @@ def main():
     
     if confirm not in ["да", "yes", "y", "д"]:
         print("⚠️  Отменено")
-        sys.exit(0)
+        return False
     
     # Обработка файлов
     print("\n" + "="*60)
@@ -164,6 +153,87 @@ def main():
     print(f"\n🔗 Откройте доску для просмотра:")
     print(f"   https://miro.com/app/board/{board_id}/")
     print("\n✅ Готово!")
+    return True
+
+def main():
+    """Главная функция с жизненным циклом"""
+    print("\n" + "="*60)
+    print("   🚀 MIRO ENGINE - UNIVERSAL DIAGRAM BUILDER")
+    print("="*60)
+    
+    # Получаем учетные данные (один раз)
+    token, board_id = get_credentials()
+    
+    # Создаем движок (один раз)
+    engine = MiroEngine(token, board_id)
+    
+    # Жизненный цикл
+    while True:
+        print("\n" + "="*60)
+        print("🔄 ГЛАВНОЕ МЕНЮ")
+        print("="*60)
+        print("1. Обработать инструкции")
+        print("2. Показать доступные файлы")
+        print("3. Сменить токен")
+        print("4. Сменить доску")
+        print("5. Выход")
+        
+        choice = input("\n➤ Выберите действие (1-5): ").strip()
+        
+        if choice == "1":
+            process_instructions(engine, board_id)
+            
+        elif choice == "2":
+            files = engine.find_instruction_files()
+            if files:
+                print(f"\n📁 Найдено файлов: {len(files)}")
+                for i, file_path in enumerate(files, 1):
+                    print(f"  {i}. {file_path.name}")
+            else:
+                print("\n❌ Файлы инструкций не найдены")
+                
+        elif choice == "3":
+            print("\n🔑 СМЕНА ТОКЕНА")
+            print("-"*60)
+            print("📌 Где взять токен:")
+            print("  1. Войдите в Miro")
+            print("  2. Settings → Apps → Your apps")
+            print("  3. Create new app → Get OAuth token")
+            
+            new_token = getpass.getpass("\n➤ Введите новый API Token (ввод скрыт): ").strip()
+            if new_token:
+                token = new_token
+                engine = MiroEngine(token, board_id)  # Пересоздаем движок
+                masked_token = token[:10] + "..." if len(token) > 10 else token
+                print(f"✅ Токен обновлен: {masked_token}")
+            else:
+                print("⚠️  Токен не изменен")
+                
+        elif choice == "4":
+            print("\n📋 СМЕНА ДОСКИ")
+            print("-"*60)
+            print("📌 Где взять Board ID:")
+            print("  Откройте доску → скопируйте ID из URL")
+            print("  Пример: miro.com/app/board/{BOARD_ID}/")
+            print(f"\n  Текущая доска: {board_id}")
+            
+            new_board_id = input("\n➤ Введите новый Board ID: ").strip()
+            if new_board_id:
+                board_id = new_board_id
+                engine = MiroEngine(token, board_id)  # Пересоздаем движок
+                print(f"✅ Доска изменена: {board_id}")
+            else:
+                print("⚠️  Доска не изменена")
+                
+        elif choice == "5":
+            print("\n👋 До свидания!")
+            break
+            
+        else:
+            print("\n⚠️  Неверный выбор. Попробуйте снова.")
+        
+        # Пауза перед следующей итерацией
+        input("\n📌 Нажмите Enter для продолжения...")
 
 if __name__ == "__main__":
     main()

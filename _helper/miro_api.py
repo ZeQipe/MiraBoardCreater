@@ -29,13 +29,18 @@ class MiroAPI:
             if response.status_code == 201:
                 return response.json().get("id")
             else:
-                print(f"⚠️  API ошибка {response.status_code}")
+                print(f"⚠️  API ошибка {response.status_code} для {endpoint}")
+                try:
+                    error_details = response.json()
+                    print(f"    Детали: {error_details}")
+                except:
+                    print(f"    Ответ: {response.text[:200]}")
                 return None
         except requests.exceptions.Timeout:
-            print(f"⚠️  Таймаут")
+            print(f"⚠️  Таймаут для {endpoint}")
             return None
         except Exception as e:
-            print(f"❌ Ошибка: {e}")
+            print(f"❌ Ошибка {endpoint}: {e}")
             return None
     
     def create_frame(self, title: str, x: float, y: float, 
@@ -77,9 +82,18 @@ class MiroAPI:
                      color: str = "#FFFF99") -> Optional[str]:
         """Создает стикер"""
         data = {
-            "data": {"content": text, "shape": "square"},
-            "style": {"fillColor": color},
-            "position": {"x": x, "y": y}
+            "data": {
+                "content": text,
+                "shape": "square"
+            },
+            "style": {
+                "fillColor": color,
+                "fontSize": "12",
+                "textAlign": "left",
+                "textAlignVertical": "top"
+            },
+            "position": {"x": x, "y": y},
+            "geometry": {"width": 200, "height": 200}
         }
         return self.api_call("sticky_notes", data)
     
